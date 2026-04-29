@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="FinControl — Sistema completo de gestão financeira pessoal e empresarial com módulo fiscal">
+  <title>FinControl — Gestão Financeira Inteligente</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ===== LOGIN SCREEN ===== -->
+<div id="login-screen" class="login-overlay">
+  <div class="login-card">
+    <div class="login-header">
+      <div class="logo-icon">FC</div>
+      <h1>FinControl</h1>
+      <p>Gestão Financeira Inteligente</p>
+    </div>
+    <div class="login-body">
+      <div class="form-group">
+        <label class="form-label">Usuário</label>
+        <input type="text" id="login-user" class="form-control" placeholder="admin ou operador">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Senha</label>
+        <input type="password" id="login-pass" class="form-control" placeholder="••••••••">
+      </div>
+      <button class="btn btn-primary btn-block" onclick="auth.login()">Acessar Sistema</button>
+      <div id="login-error" class="text-danger mt-2 text-center font-sm" style="display:none">Usuário ou senha inválidos!</div>
+    </div>
+    <div class="login-footer">
+      <p>Dica: use <b>admin</b>/<b>admin</b> ou <b>operador</b>/<b>operador</b></p>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none">
+
+  <!-- ===== SIDEBAR ===== -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">FC</div>
+      <div class="logo-text">Fin<span>Control</span></div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <div class="nav-section">
+        <div class="nav-section-title">Principal</div>
+        <div class="nav-item active" data-page="dashboard" onclick="navigate('dashboard')">
+          <span class="nav-icon">📊</span> Dashboard
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Financeiro</div>
+        <div class="nav-item" data-page="transactions" onclick="navigate('transactions')">
+          <span class="nav-icon">🔄</span> Lançamentos
+        </div>
+        <div class="nav-item" data-page="income" onclick="navigate('income')">
+          <span class="nav-icon">📈</span> Receitas
+        </div>
+        <div class="nav-item" data-page="expenses" onclick="navigate('expenses')">
+          <span class="nav-icon">📉</span> Despesas
+        </div>
+        <div class="nav-item" data-page="budget" onclick="navigate('budget')">
+          <span class="nav-icon">🎯</span> Orçamento
+        </div>
+        <div class="nav-item" data-page="goals" onclick="navigate('goals')">
+          <span class="nav-icon">🏆</span> Metas
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Gestão</div>
+        <div class="nav-item" data-page="agenda" onclick="navigate('agenda')">
+          <span class="nav-icon">📅</span> Agenda Financeira
+        </div>
+        <div class="nav-item" data-page="reports" onclick="navigate('reports')">
+          <span class="nav-icon">📋</span> Relatórios
+        </div>
+        <div class="nav-item" data-page="contacts" onclick="navigate('contacts')">
+          <span class="nav-icon">👥</span> Clientes & Fornecedores
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Fiscal</div>
+        <div class="nav-item" data-page="fiscal" onclick="navigate('fiscal')">
+          <span class="nav-icon">🧾</span> Módulo Fiscal
+          <span class="nav-badge">!</span>
+        </div>
+      </div>
+
+      <div class="nav-section admin-only">
+        <div class="nav-section-title">Administração</div>
+        <div class="nav-item" data-page="backup" onclick="navigate('backup')">
+          <span class="nav-icon">💾</span> Backup & Restauração
+        </div>
+      </div>
+
+      <div class="nav-section">
+        <div class="nav-section-title">Sistema</div>
+        <div class="nav-item" data-page="settings" onclick="navigate('settings')">
+          <span class="nav-icon">⚙️</span> Configurações
+        </div>
+        <div class="nav-item" onclick="auth.logout()">
+          <span class="nav-icon">🚪</span> Sair
+        </div>
+      </div>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="navigate('settings')">
+        <div class="user-avatar">JS</div>
+        <div class="user-info">
+          <div class="user-name">João Silva</div>
+          <div class="user-role">Plano Pro</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sidebar overlay (mobile) -->
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <div class="main-content">
+
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <button class="btn-menu" onclick="toggleSidebar()">☰</button>
+        <span class="page-title" id="page-title">Dashboard</span>
+      </div>
+      <div class="topbar-search">
+        <span style="color:var(--text-muted)">🔍</span>
+        <input type="text" placeholder="Buscar lançamentos, categorias...">
+      </div>
+      <div class="topbar-right">
+        <button class="topbar-btn" onclick="showToast('Sem novas notificações','info')" title="Notificações">
+          🔔<span class="badge"></span>
+        </button>
+        <button class="topbar-btn" onclick="navigate('reports')" title="Relatórios">📊</button>
+        <div class="topbar-avatar" onclick="navigate('settings')" title="Perfil">JS</div>
+      </div>
+    </header>
+
+    <!-- ===== PAGE: DASHBOARD ===== -->
+    <main class="page-content active" id="page-dashboard">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Visão Geral</h2>
+          <p id="dash-date">Carregando...</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-ghost" onclick="openTransactionModal(null,'expense')">+ Despesa</button>
+          <button class="btn btn-primary" onclick="openTransactionModal(null,'income')">+ Receita</button>
+        </div>
+      </div>
+
+      <!-- KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card blue">
+          <div class="kpi-top">
+            <div class="kpi-icon blue">💎</div>
+            <span class="kpi-trend up">▲ 12.5%</span>
+          </div>
+          <div class="kpi-value" id="kpi-balance">—</div>
+          <div class="kpi-label">Saldo do Período</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-top">
+            <div class="kpi-icon green">📈</div>
+            <span class="kpi-trend up">▲ 8.2%</span>
+          </div>
+          <div class="kpi-value" id="kpi-income">—</div>
+          <div class="kpi-label">Total de Receitas</div>
+        </div>
+        <div class="kpi-card red">
+          <div class="kpi-top">
+            <div class="kpi-icon red">📉</div>
+            <span class="kpi-trend down">▲ 3.1%</span>
+          </div>
+          <div class="kpi-value" id="kpi-expense">—</div>
+          <div class="kpi-label">Total de Despesas</div>
+        </div>
+        <div class="kpi-card purple">
+          <div class="kpi-top">
+            <div class="kpi-icon purple">🏦</div>
+            <span class="kpi-trend up">▲ 5.0%</span>
+          </div>
+          <div class="kpi-value" id="kpi-savings">—</div>
+          <div class="kpi-label">Taxa de Poupança</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-2 mb-5">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Receitas vs Despesas</span>
+            <span class="badge badge-gray">Últimos 6 meses</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="height:240px">
+              <canvas id="chart-bar"></canvas>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Despesas por Categoria</span>
+            <span class="badge badge-gray">Mês atual</span>
+          </div>
+          <div class="card-body">
+            <div class="chart-container" style="height:240px">
+              <canvas id="chart-donut"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Row -->
+      <div class="grid-2 mb-5">
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Lançamentos Recentes</span>
+            <button class="btn btn-ghost btn-sm" onclick="navigate('transactions')">Ver todos →</button>
+          </div>
+          <div class="card-body" style="padding:0">
+            <div class="table-wrapper">
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>Descrição</th>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Valor</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-recent-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div class="card" style="flex:1">
+            <div class="card-header">
+              <span class="card-title">🏆 Metas Financeiras</span>
+              <button class="btn btn-ghost btn-sm" onclick="navigate('goals')">Ver todas →</button>
+            </div>
+            <div class="card-body" id="dash-goals"></div>
+          </div>
+          <div class="card" style="flex:1">
+            <div class="card-header">
+              <span class="card-title">📅 Próximos Eventos</span>
+              <button class="btn btn-ghost btn-sm" onclick="navigate('agenda')">Ver agenda →</button>
+            </div>
+            <div class="card-body" id="dash-events"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== PAGE: TRANSACTIONS ===== -->
+    <main class="page-content" id="page-transactions">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Todos os Lançamentos</h2>
+          <p>Gerencie receitas e despesas em um único lugar</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-ghost" onclick="openTransactionModal(null,'expense')">+ Despesa</button>
+          <button class="btn btn-primary" onclick="openTransactionModal(null,'income')">+ Receita</button>
+        </div>
+      </div>
+      <div class="filter-bar">
+        <div class="search-input-wrap">
+          <span>🔍</span>
+          <input type="text" placeholder="Buscar lançamento..." oninput="renderTransactions(this.value)">
+        </div>
+        <select class="form-control" style="max-width:160px" onchange="filterByType(this.value)">
+          <option value="">Todos os tipos</option>
+          <option value="income">Receitas</option>
+          <option value="expense">Despesas</option>
+        </select>
+        <select class="form-control" style="max-width:180px">
+          <option>Mês atual</option>
+          <option>Últimos 3 meses</option>
+          <option>Últimos 6 meses</option>
+          <option>Este ano</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇️ Exportar CSV</button>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:0">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th>Categoria</th>
+                  <th>Tipo</th>
+                  <th>Valor</th>
+                  <th>Status</th>
+                  <th>Ações</th>
+                </tr>
+              </thead>
+              <tbody id="tx-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ===== PAGE: INCOME ===== -->
+    <main class="page-content" id="page-income">
+      <div id="income-content"></div>
+    </main>
+
+    <!-- ===== PAGE: EXPENSES ===== -->
+    <main class="page-content" id="page-expenses">
+      <div id="expenses-content"></div>
+    </main>
+
+    <!-- ===== PAGE: BUDGET ===== -->
+    <main class="page-content" id="page-budget">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Controle de Orçamento</h2>
+          <p>Defina limites por categoria e acompanhe seus gastos</p>
+        </div>
+      </div>
+      <div id="budget-content"></div>
+    </main>
+
+    <!-- ===== PAGE: GOALS ===== -->
+    <main class="page-content" id="page-goals">
+      <div id="goals-content"></div>
+    </main>
+
+    <!-- ===== PAGE: AGENDA ===== -->
+    <main class="page-content" id="page-agenda">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Agenda Financeira</h2>
+          <p>Organize vencimentos, recebimentos e compromissos financeiros</p>
+        </div>
+      </div>
+      <div id="agenda-content"></div>
+    </main>
+
+    <!-- ===== PAGE: REPORTS ===== -->
+    <main class="page-content" id="page-reports">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Relatórios Financeiros</h2>
+          <p>Análise detalhada da sua saúde financeira</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-ghost" onclick="window.print()">🖨️ Imprimir</button>
+          <button class="btn btn-primary" onclick="exportCSV()">⬇️ Exportar</button>
+        </div>
+      </div>
+      <div id="reports-content"></div>
+    </main>
+
+    <!-- ===== PAGE: FISCAL ===== -->
+    <main class="page-content" id="page-fiscal">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Módulo Fiscal</h2>
+          <p>Notas fiscais, impostos, Simples Nacional e IRPF</p>
+        </div>
+      </div>
+      <div id="fiscal-content"></div>
+    </main>
+
+    <!-- ===== PAGE: CONTACTS ===== -->
+    <main class="page-content" id="page-contacts">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Clientes & Fornecedores</h2>
+          <p>Gerencie seus contatos financeiros</p>
+        </div>
+      </div>
+      <div id="contacts-content"></div>
+    </main>
+
+    <!-- ===== PAGE: SETTINGS ===== -->
+    <main class="page-content" id="page-settings">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Configurações</h2>
+          <p>Personalize sua conta e preferências</p>
+        </div>
+      </div>
+      <div id="settings-content"></div>
+    </main>
+
+    <!-- ===== PAGE: BACKUP ===== -->
+    <main class="page-content" id="page-backup">
+      <div class="page-header">
+        <div class="page-header-info">
+          <h2>Backup & Restauração</h2>
+          <p>Gerencie a segurança dos seus dados locais</p>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="card">
+          <div class="card-header"><span class="card-title">Exportar Dados</span></div>
+          <div class="card-body">
+            <p class="mb-4 text-muted">Baixe uma cópia completa de todos os seus lançamentos, notas fiscais e configurações em formato JSON.</p>
+            <button class="btn btn-primary" onclick="db.exportBackup()">Fazer Backup Agora</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><span class="card-title">Restaurar Dados</span></div>
+          <div class="card-body">
+            <p class="mb-4 text-muted">Importe um arquivo de backup anterior. <b>Atenção:</b> Isso substituirá todos os dados atuais!</p>
+            <input type="file" id="import-file" style="display:none" onchange="db.importBackup(event)" accept=".json">
+            <button class="btn btn-ghost" onclick="document.getElementById('import-file').click()">Selecionar Arquivo</button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<!-- ===== TOAST CONTAINER ===== -->
+<div id="toast-container"></div>
+
+<!-- ===================================================
+     MODALS
+     =================================================== -->
+
+<!-- Modal: Transaction (Add/Edit) -->
+<div class="modal-overlay" id="modal-transaction">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="tx-modal-title">Novo Lançamento</span>
+      <button class="modal-close" onclick="closeModal('modal-transaction')">✕</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="tx-id">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Tipo <span class="required">*</span></label>
+          <select class="form-control" id="tx-type" onchange="updateCategoryOptions()">
+            <option value="income">Receita</option>
+            <option value="expense">Despesa</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-control" id="tx-status">
+            <option value="confirmed">Confirmado</option>
+            <option value="pending">Pendente</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição <span class="required">*</span></label>
+        <input type="text" class="form-control" id="tx-desc" placeholder="Ex: Salário, Aluguel, Supermercado...">
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Valor (R$) <span class="required">*</span></label>
+          <input type="number" class="form-control" id="tx-amount" placeholder="0,00" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data <span class="required">*</span></label>
+          <input type="date" class="form-control" id="tx-date">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Categoria</label>
+          <select class="form-control" id="tx-category"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Conta</label>
+          <select class="form-control" id="tx-account">
+            <option>Conta Corrente</option>
+            <option>Cartão de Crédito</option>
+            <option>Poupança</option>
+            <option>Débito Automático</option>
+            <option>Corretora</option>
+            <option>Dinheiro</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-transaction')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveTransaction()">Salvar Lançamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Nota Fiscal -->
+<div class="modal-overlay" id="modal-nf">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🧾 Emitir Nota Fiscal de Serviço</span>
+      <button class="modal-close" onclick="closeModal('modal-nf')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Número da NFS-e <span class="required">*</span></label>
+          <input type="text" class="form-control" id="nf-number" placeholder="NFS-001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Data de Emissão <span class="required">*</span></label>
+          <input type="date" class="form-control" id="nf-date">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cliente / Tomador <span class="required">*</span></label>
+        <input type="text" class="form-control" id="nf-client" placeholder="Nome ou razão social do cliente">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Descrição do Serviço</label>
+        <textarea class="form-control" id="nf-desc" placeholder="Descreva o serviço prestado..."></textarea>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Valor dos Serviços (R$) <span class="required">*</span></label>
+          <input type="number" class="form-control" id="nf-value" placeholder="0,00" min="0" step="0.01" oninput="previewNFTaxes()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Alíquota ISS (%)</label>
+          <select class="form-control" id="nf-iss-aliq" onchange="previewNFTaxes()">
+            <option value="2">2%</option>
+            <option value="3">3%</option>
+            <option value="4">4%</option>
+            <option value="5" selected>5%</option>
+          </select>
+        </div>
+      </div>
+      <div id="nf-tax-preview" class="alert alert-info" style="display:none">
+        <div style="width:100%">
+          <div class="font-bold mb-2">Prévia dos Impostos</div>
+          <div class="stat-row"><span class="stat-label">ISS</span><span class="stat-value" id="prev-iss">—</span></div>
+          <div class="stat-row"><span class="stat-label">IR Retido (8%)</span><span class="stat-value text-danger" id="prev-ir">—</span></div>
+          <div class="stat-row"><span class="stat-label">Valor Líquido</span><span class="stat-value text-success" id="prev-liq">—</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-nf')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveNF()">Emitir Nota Fiscal</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: View NF -->
+<div class="modal-overlay" id="modal-view-nf">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Visualizar Nota Fiscal</span>
+      <button class="modal-close" onclick="closeModal('modal-view-nf')">✕</button>
+    </div>
+    <div class="modal-body" id="nf-view-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-view-nf')">Fechar</button>
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Imposto -->
+<div class="modal-overlay" id="modal-imposto">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📋 Lançar Imposto / Tributo</span>
+      <button class="modal-close" onclick="closeModal('modal-imposto')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Tributo <span class="required">*</span></label>
+          <select class="form-control" id="imp-name">
+            <option>IRPF</option>
+            <option>IRPJ</option>
+            <option>ISS</option>
+            <option>INSS</option>
+            <option>CSLL</option>
+            <option>PIS/COFINS</option>
+            <option>DAS (Simples)</option>
+            <option>IPTU</option>
+            <option>IPVA</option>
+            <option>Outro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-control" id="imp-tipo">
+            <option value="federal">Federal</option>
+            <option value="estadual">Estadual</option>
+            <option value="municipal">Municipal</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Competência <span class="required">*</span></label>
+          <input type="text" class="form-control" id="imp-competencia" placeholder="Ex: Abr/2026">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Vencimento <span class="required">*</span></label>
+          <input type="date" class="form-control" id="imp-vencimento">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor (R$) <span class="required">*</span></label>
+        <input type="number" class="form-control" id="imp-valor" placeholder="0,00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-imposto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveImposto()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Budget -->
+<div class="modal-overlay" id="modal-budget">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🎯 Definir Orçamento</span>
+      <button class="modal-close" onclick="closeModal('modal-budget')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Categoria de Despesa</label>
+        <select class="form-control" id="bud-category">
+          <option value="5">🏠 Moradia</option>
+          <option value="6">🍽️ Alimentação</option>
+          <option value="7">🚗 Transporte</option>
+          <option value="8">🏥 Saúde</option>
+          <option value="9">📚 Educação</option>
+          <option value="10">🎮 Lazer</option>
+          <option value="11">📋 Impostos</option>
+          <option value="12">⚡ Serviços</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Limite Mensal (R$) <span class="required">*</span></label>
+        <input type="number" class="form-control" id="bud-limit" placeholder="0,00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-budget')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveBudget()">Salvar Orçamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Goal -->
+<div class="modal-overlay" id="modal-goal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">🏆 Nova Meta Financeira</span>
+      <button class="modal-close" onclick="closeModal('modal-goal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome da Meta <span class="required">*</span></label>
+        <input type="text" class="form-control" id="goal-name" placeholder="Ex: Reserva de Emergência, Viagem...">
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Valor Alvo (R$) <span class="required">*</span></label>
+          <input type="number" class="form-control" id="goal-target" placeholder="0,00" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Valor Atual (R$)</label>
+          <input type="number" class="form-control" id="goal-current" placeholder="0,00" min="0" step="0.01">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Prazo <span class="required">*</span></label>
+          <input type="date" class="form-control" id="goal-deadline">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ícone</label>
+          <select class="form-control" id="goal-icon">
+            <option value="🎯">🎯 Meta</option>
+            <option value="🛡️">🛡️ Reserva</option>
+            <option value="✈️">✈️ Viagem</option>
+            <option value="🏡">🏡 Imóvel</option>
+            <option value="🚗">🚗 Veículo</option>
+            <option value="💻">💻 Tecnologia</option>
+            <option value="📚">📚 Educação</option>
+            <option value="💍">💍 Casamento</option>
+            <option value="👶">👶 Filho(a)</option>
+            <option value="🏦">🏦 Investimento</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cor</label>
+        <input type="color" class="form-control" id="goal-color" value="#2563eb" style="height:42px;cursor:pointer">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-goal')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveGoal()">Criar Meta</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Event -->
+<div class="modal-overlay" id="modal-event">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">📅 Novo Evento na Agenda</span>
+      <button class="modal-close" onclick="closeModal('modal-event')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Título do Evento <span class="required">*</span></label>
+        <input type="text" class="form-control" id="ev-title" placeholder="Ex: Vencimento Cartão, Receber Salário...">
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">Data <span class="required">*</span></label>
+          <input type="date" class="form-control" id="ev-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tipo</label>
+          <select class="form-control" id="ev-type">
+            <option value="expense">💸 Pagamento</option>
+            <option value="income">💰 Recebimento</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Valor (R$) <span class="required">*</span></label>
+        <input type="number" class="form-control" id="ev-amount" placeholder="0,00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-event')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveEvent()">Adicionar Evento</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Contact -->
+<div class="modal-overlay" id="modal-contact">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">👥 Novo Contato</span>
+      <button class="modal-close" onclick="closeModal('modal-contact')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Nome / Razão Social <span class="required">*</span></label>
+        <input type="text" class="form-control" id="con-name" placeholder="Nome completo ou razão social">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tipo</label>
+        <select class="form-control" id="con-type">
+          <option value="client">Cliente</option>
+          <option value="supplier">Fornecedor</option>
+        </select>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">E-mail</label>
+          <input type="email" class="form-control" id="con-email" placeholder="email@exemplo.com">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Telefone</label>
+          <input type="tel" class="form-control" id="con-phone" placeholder="(00) 00000-0000">
+        </div>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label">CPF / CNPJ</label>
+          <input type="text" class="form-control" placeholder="000.000.000-00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cidade</label>
+          <input type="text" class="form-control" placeholder="São Paulo, SP">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-contact')">Cancelar</button>
+      <button class="btn btn-primary" onclick="saveContact()">Salvar Contato</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SCRIPTS ===== -->
+<script src="js/app.js"></script>
+<script>
+  // Set dashboard date
+  document.addEventListener('DOMContentLoaded', () => {
+    const now = new Date();
+    const opts = { weekday:'long', year:'numeric', month:'long', day:'numeric' };
+    const dateEl = document.getElementById('dash-date');
+    if (dateEl) dateEl.textContent = now.toLocaleDateString('pt-BR', opts);
+  });
+
+  // Update category options when type changes
+  function updateCategoryOptions() {
+    const type = document.getElementById('tx-type').value;
+    const catSel = document.getElementById('tx-category');
+    catSel.innerHTML = App.data.categories
+      .filter(c => c.type === type)
+      .map(c => `<option value="${c.id}">${c.icon} ${c.name}</option>`)
+      .join('');
+  }
+
+  // Preview NF taxes
+  function previewNFTaxes() {
+    const value = parseFloat(document.getElementById('nf-value').value) || 0;
+    const issAliq = parseFloat(document.getElementById('nf-iss-aliq').value) / 100;
+    const preview = document.getElementById('nf-tax-preview');
+    if (value <= 0) { preview.style.display = 'none'; return; }
+    const iss = value * issAliq;
+    const ir  = value * 0.08;
+    const liq = value - iss - ir;
+    document.getElementById('prev-iss').textContent = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(iss);
+    document.getElementById('prev-ir').textContent  = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(ir);
+    document.getElementById('prev-liq').textContent = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(liq);
+    preview.style.display = 'flex';
+  }
+
+  // Filter transactions by type
+  function filterByType(type) {
+    const tbody = document.getElementById('tx-tbody');
+    if (!tbody) return;
+    let txs = [...App.data.transactions].sort((a,b) => b.date.localeCompare(a.date));
+    if (type) txs = txs.filter(t => t.type === type);
+    tbody.innerHTML = txs.map(t => {
+      const cat = getCat(t.category);
+      return `<tr>
+        <td>${fmt.date(t.date)}</td>
+        <td><span class="td-main">${t.desc}</span></td>
+        <td><span style="display:inline-flex;align-items:center;gap:6px"><span class="dot" style="background:${cat.color}"></span>${cat.name}</span></td>
+        <td><span class="badge badge-${t.type==='income'?'success':'danger'}">${t.type==='income'?'Receita':'Despesa'}</span></td>
+        <td class="font-bold ${t.type==='income'?'text-success':'text-danger'}">${t.type==='income'?'+':'−'}${fmt.currency(t.amount)}</td>
+        <td><span class="badge badge-${t.status==='confirmed'?'success':t.status==='pending'?'warning':'gray'}">${t.status==='confirmed'?'Confirmado':t.status==='pending'?'Pendente':'Cancelado'}</span></td>
+        <td>
+          <div class="flex gap-2">
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="editTransaction(${t.id})">✏️</button>
+            <button class="btn btn-ghost btn-sm btn-icon" onclick="deleteTransaction(${t.id})">🗑️</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Export CSV
+  function exportCSV() {
+    const rows = [['Data','Descrição','Categoria','Tipo','Valor','Status','Conta']];
+    App.data.transactions.forEach(t => {
+      const cat = getCat(t.category);
+      rows.push([fmt.date(t.date), t.desc, cat.name, t.type==='income'?'Receita':'Despesa', t.amount.toFixed(2), t.status, t.account]);
+    });
+    const csv = rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+    const blob = new Blob(['\uFEFF'+csv], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'fincontrol_lancamentos.csv'; a.click();
+    URL.revokeObjectURL(url);
+    showToast('CSV exportado com sucesso!', 'success');
+  }
+
+  // Edit goal (simple)
+  function editGoal(id) {
+    const g = App.data.goals.find(x => x.id === id);
+    if (!g) return;
+    document.getElementById('goal-name').value    = g.name;
+    document.getElementById('goal-target').value  = g.target;
+    document.getElementById('goal-current').value = g.current;
+    document.getElementById('goal-deadline').value= g.deadline;
+    document.getElementById('goal-icon').value    = g.icon;
+    document.getElementById('goal-color').value   = g.color;
+    // Remove old and re-save on submit
+    App.data.goals = App.data.goals.filter(x => x.id !== id);
+    openModal('modal-goal');
+  }
+</script>
+</body>
+</html>
